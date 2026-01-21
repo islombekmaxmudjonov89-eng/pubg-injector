@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIGen.uz - PUBG Hybrid Injector</title>
+    <style>
+        /* Umumiy ko'rinish va Matnni belgilashni butunlay taqiqlash */
+        body { 
+            background-color: #000; 
+            color: white; 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            text-align: center; 
+            margin: 0; 
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            /* Matnni o'chirish yoki belgilashni taqiqlash */
+            user-select: none; 
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        /* Splash Screen */
+        #splash { 
+            position: fixed; 
+            top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000; 
+            z-index: 100; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            transition: opacity 0.6s ease;
+        }
+
+        .logo { 
+            font-size: 60px; 
+            font-weight: bold; 
+            color: #fbff00; 
+            text-shadow: 0 0 30px rgba(251, 255, 0, 0.7); 
+            margin-bottom: 30px; 
+            letter-spacing: 5px;
+            pointer-events: none;
+        }
+
+        /* SILLIQ KO'K BAR */
+        .loader-container { 
+            width: 75%; 
+            height: 10px; 
+            background: #111; 
+            border-radius: 20px; 
+            overflow: hidden; 
+            border: 1px solid #333;
+        }
+
+        .loader-bar { 
+            width: 0%; 
+            height: 100%; 
+            background: #00d2ff; 
+            box-shadow: 0 0 15px #00d2ff;
+            /* Chiziq sakramaydi, suvdek oqadi */
+            transition: width 0.1s linear; 
+        }
+
+        #percent-text {
+            margin-top: 15px;
+            color: #00d2ff;
+            font-weight: bold;
+            font-size: 20px;
+            pointer-events: none;
+            font-family: monospace;
+        }
+
+        /* Asosiy Menyusi */
+        #main-menu { 
+            display: none; 
+            padding: 20px;
+        }
+
+        .status-box {
+            background: #111;
+            padding: 15px 30px;
+            border-radius: 50px;
+            border: 1px solid #333;
+            margin-bottom: 30px;
+            display: inline-block;
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .btn { 
+            width: 300px;
+            padding: 22px; 
+            font-size: 18px; 
+            border: none; 
+            border-radius: 15px; 
+            cursor: pointer; 
+            transition: 0.4s; 
+            font-weight: bold; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Ranglar mantiqi */
+        .btn-fake { background-color: #222; color: #555; border: 1px solid #333; } 
+        .btn-original { background-color: #2ecc71; color: #fff; box-shadow: 0 0 20px rgba(46, 204, 113, 0.4); } 
+        
+        /* FAOL HOLAT (KO'K) */
+        .active-fake { 
+            background-color: #00d2ff !important; 
+            color: white !important;
+            box-shadow: 0 0 25px #00d2ff !important;
+        }
+
+        /* O'CHIK HOLAT (KULRANG) */
+        .disabled-mode { 
+            background-color: #1a1a1a !important; 
+            color: #444 !important;
+            box-shadow: none !important;
+            opacity: 0.6;
+        }
+
+        #inject-panel {
+            display: none;
+            margin-top: 40px;
+        }
+
+        #status-text {
+            color: #00d2ff;
+            font-size: 14px;
+            margin-bottom: 12px;
+            font-family: monospace;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="splash">
+        <div class="logo">AIGen.uz</div>
+        <div class="loader-container">
+            <div id="bar" class="loader-bar"></div>
+        </div>
+        <div id="percent-text">0%</div>
+        <p style="margin-top: 10px; color: #444; font-size: 12px;">SYSTEM INITIALIZING...</p>
+    </div>
+
+    <div id="main-menu">
+        <h1 style="color: #fbff00; margin-bottom: 5px; letter-spacing: 2px;">AIGen HYBRID</h1>
+        <p style="color: #555; margin-bottom: 35px; font-size: 12px;">VERSION 3.1.0 PRE-RELEASE</p>
+        
+        <div class="status-box">
+            STATUS: <span id="current-mode" style="color: #2ecc71;">ORIGINAL SERVER</span>
+        </div>
+
+        <div class="btn-group">
+            <button id="origBtn" class="btn btn-original" onclick="backToOriginal()">ORIGINAL SERVER [ON]</button>
+            <button id="fakeBtn" class="btn btn-fake" onclick="startInjection()">FAKE SERVER [OFF]</button>
+        </div>
+        
+        <div id="inject-panel">
+            <p id="status-text">WAITING FOR COMMAND...</p>
+            <div class="loader-container" style="margin: 0 auto; width: 300px; height: 6px;">
+                <div id="inject-bar" class="loader-bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Splash Screen - Silliq va beton logotip
+        window.onload = function() {
+            let bar = document.getElementById('bar');
+            let pText = document.getElementById('percent-text');
+            let width = 0;
+            let interval = setInterval(() => {
+                if (width >= 100) {
+                    clearInterval(interval);
+                    document.getElementById('splash').style.opacity = '0';
+                    setTimeout(() => {
+                        document.getElementById('splash').style.display = 'none';
+                        document.getElementById('main-menu').style.display = 'block';
+                    }, 600);
+                } else {
+                    width++;
+                    bar.style.width = width + '%';
+                    pText.innerText = width + '%';
+                }
+            }, 40); 
+        };
+
+        // 2. FAKE SERVERGA O'TISH (Toggle Mantiqi)
+        function startInjection() {
+            // PYTHON SERVERGA REAL SO'ROV YUBORISH QISMI
+            fetch('/run_injection', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                let fBtn = document.getElementById('fakeBtn');
+                let oBtn = document.getElementById('origBtn');
+                let mode = document.getElementById('current-mode');
+
+                // FAKE yoqiladi
+                fBtn.classList.add('active-fake');
+                fBtn.innerText = "FAKE SERVER [ON]";
+                
+                // ORIGINAL o'chadi (Kulrang bo'ladi)
+                oBtn.classList.remove('btn-original');
+                oBtn.classList.add('disabled-mode');
+                oBtn.innerText = "ORIGINAL SERVER [OFF]";
+
+                mode.innerText = "BYPASS ACTIVE";
+                mode.style.color = "#00d2ff";
+
+                document.getElementById('inject-panel').style.display = 'block';
+                runBypassAnimation();
+            });
+        }
+
+        // 3. ORIGINALGA QAYTISH
+        function backToOriginal() {
+            let fBtn = document.getElementById('fakeBtn');
+            let oBtn = document.getElementById('origBtn');
+            let mode = document.getElementById('current-mode');
+
+            // ORIGINAL qayta yoqiladi
+            oBtn.classList.remove('disabled-mode');
+            oBtn.classList.add('btn-original');
+            oBtn.innerText = "ORIGINAL SERVER [ON]";
+
+            // FAKE o'chadi
+            fBtn.classList.remove('active-fake');
+            fBtn.innerText = "FAKE SERVER [OFF]";
+
+            mode.innerText = "ORIGINAL SERVER";
+            mode.style.color = "#2ecc71";
+
+            document.getElementById('inject-panel').style.display = 'none';
+            alert("Tizim original serverga qaytarildi!");
+        }
+
+        // Injeksiya progress bari
+        function runBypassAnimation() {
+            let iBar = document.getElementById('inject-bar');
+            let iText = document.getElementById('status-text');
+            let iWidth = 0;
+            iBar.style.width = '0%';
+            
+            let iInt = setInterval(() => {
+                if (iWidth >= 100) {
+                    clearInterval(iInt);
+                    iText.innerText = "✅ TIZIM TAYYOR! OFFSETLAR O'RNATILDI.";
+                    iText.style.color = "#2ecc71";
+                } else {
+                    iWidth++;
+                    iBar.style.width = iWidth + '%';
+                    if(iWidth == 20) iText.innerText = "> Hooking libshadowtracker.so...";
+                    if(iWidth == 50) iText.innerText = "> Patching Memory (0x2B4F1A)...";
+                    if(iWidth == 85) iText.innerText = "> Bypass Anti-Cheat Status: OK";
+                }
+            }, 50);
+        }
+    </script>
+</body>
+</html>
