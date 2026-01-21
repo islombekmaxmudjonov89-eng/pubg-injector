@@ -1,21 +1,23 @@
 [app]
-title = AIGen Hybrid
-package.name = aigen.hybrid.injector
-package.domain = uz.aigen
+title = PUBG Injector
+package.name = pubginjector
+package.domain = org.test
 source.dir = .
-source.include_exts = py,png,jpg,html,js,css
-version = 3.1.0
+source.include_exts = py,png,jpg,kv,atlas,html,js
+version = 0.1
+requirements = python3,kivy,flask,jinja2,werkzeug,itsdangerous,click,hostpython3
 
-# BU YERDA KERAKLI KUTUBXONALAR
-requirements = python3, kivy, flask, frida-tools, threading
-
-# ANDROID RUXSATNOMALARI
-android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
-
-# ANDROID XUSUSIYATLARI
-android.api = 33
+orientation = portrait
+fullscreen = 1
+android.archs = armeabi-v7a, arm64-v8a
+android.allow_backup = True
+android.api = 31
 android.minapi = 21
-android.archs = arm64-v8a, armeabi-v7a
+android.sdk = 31
+android.ndk = 23b
+android.skip_update = False
+android.accept_sdk_license = True
 
-# WEBVIEW ISHLASHI UCHUN
-p4a.branch = master
+[buildozer]
+log_level = 2
+warn_on_root = 1
