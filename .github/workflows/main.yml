@@ -1,4 +1,4 @@
-name: Build APK FINAL
+name: Build PUBG Injector APK
 
 on:
   push:
@@ -12,29 +12,40 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Force Install Git and Tools
+      - name: Install System Dependencies
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y git build-essential python3-dev
-          # Git borligini tekshirish
-          git --version
+          sudo apt-get update
+          # Git va Buildozer uchun barcha kerakli vositalarni o'rnatish
+          sudo apt-get install -y git build-essential libffi-dev libssl-dev libtool autoconf automake libncurses6 libncursesw6 openjdk-17-jdk unzip zip ccache pkg-config python3-dev
+          git --version # Git borligini tasdiqlash
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install Python dependencies
+      - name: Install Python Packages
         run: |
-          pip install --upgrade pip
-          pip install buildozer cython==0.29.33 flask frida-tools
+          python -m pip install --upgrade pip
+          pip install buildozer cython==0.29.33 flask
 
-      - name: Build with Buildozer
+      - name: Build APK with Buildozer
         run: |
-          # Agar spec fayli bo'lmasa yaratamiz
+          # Agar spec fayli bo'lmasa, avtomatik yaratish
           if [ ! -f buildozer.spec ]; then
             buildozer init
+            # Spec faylini avtomatik tahrirlash (requirements qo'shish)
+            sed -i 's/requirements = python3,kivy/requirements = python3,kivy,flask/g' buildozer.spec
+            sed -i 's/#android.permissions = INTERNET/android.permissions = INTERNET/g' buildozer.spec
           fi
-          # Gitni buildozer ko'rishi uchun yo'lni ko'rsatamiz
-          export PATH=$PATH:/usr/bin/git
+          # Build jarayonini boshlash
           buildozer -v android debug
+        env:
+          # Buildozer uchun kesh va yo'llarni sozlash
+          PATH: $PATH:$HOME/.local/bin
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pubg-injector-debug
+          path: bin/*.apk
