@@ -7,6 +7,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Get Date
+        id: get-date
+        run: echo "date=$(date -u +'%Y%m%d')" >> $GITHUB_OUTPUT
+
+      - name: Cache Buildozer
+        uses: actions/cache@v4
+        with:
+          path: .buildozer
+          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}-${{ steps.get-date.outputs.date }}
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -21,9 +31,9 @@ jobs:
 
       - name: Build APK
         run: |
-          buildozer android debug --ignore-setup-py || true
-          # Bu yerda litsenziyani avtomat qabul qilish uchun:
-          echo "y" | buildozer android debug
+          # SDK litsenziyasini avtomat qabul qilish
+          mkdir -p ~/.android && touch ~/.android/repositories.cfg
+          yes | buildozer android debug || true
         
       - name: Upload APK
         uses: actions/upload-artifact@v4
