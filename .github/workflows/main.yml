@@ -1,4 +1,4 @@
-name: Build PUBG Injector APK
+name: Build APK FINAL FIXED
 
 on:
   push:
@@ -15,9 +15,12 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          # Git va Buildozer uchun barcha kerakli vositalarni o'rnatish
+          # Majburiy ravishda git va hamma build vositalarini o'rnatamiz
           sudo apt-get install -y git build-essential libffi-dev libssl-dev libtool autoconf automake libncurses6 libncursesw6 openjdk-17-jdk unzip zip ccache pkg-config python3-dev
-          git --version # Git borligini tasdiqlash
+          
+          # Git qayerdaligini aniqlab, tizimga tanitib qo'yamiz
+          which git
+          git --version
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -26,26 +29,20 @@ jobs:
 
       - name: Install Python Packages
         run: |
-          python -m pip install --upgrade pip
+          pip install --upgrade pip
           pip install buildozer cython==0.29.33 flask
 
-      - name: Build APK with Buildozer
+      - name: Build with Buildozer
         run: |
-          # Agar spec fayli bo'lmasa, avtomatik yaratish
+          # Git uchun PATH-ni majburan kiritamiz
+          export PATH=$PATH:/usr/bin/git
+          
           if [ ! -f buildozer.spec ]; then
             buildozer init
-            # Spec faylini avtomatik tahrirlash (requirements qo'shish)
             sed -i 's/requirements = python3,kivy/requirements = python3,kivy,flask/g' buildozer.spec
-            sed -i 's/#android.permissions = INTERNET/android.permissions = INTERNET/g' buildozer.spec
           fi
-          # Build jarayonini boshlash
+          
+          # Buildozer git-ni ko'rishi uchun ushbu komanda shart
           buildozer -v android debug
         env:
-          # Buildozer uchun kesh va yo'llarni sozlash
-          PATH: $PATH:$HOME/.local/bin
-
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: pubg-injector-debug
-          path: bin/*.apk
+          PATH: $PATH:/usr/bin:/usr/local/bin
