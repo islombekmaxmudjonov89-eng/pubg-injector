@@ -26,29 +26,21 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
+          # Bu yerda libncurses5 o'rniga libncurses6 va boshqa kerakli paketlar qo'shildi
           sudo apt-get install -y libsqlite3-dev sqlite3 bsdmainutils build-essential \
             libffi-dev libssl-dev python3-dev zip unzip libtool autoconf automake \
-            libncurses5 libncursesw5 zlib1g-dev openjdk-17-jdk ant ccache
+            libncurses6 libncursesw6 zlib1g-dev openjdk-17-jdk ant ccache
 
       - name: Build with Buildozer
         run: |
-          # Buildozer init (agar mavjud bo'lmasa)
           if [ ! -f buildozer.spec ]; then
             buildozer init
           fi
-          # Buildozer orqali APK yaratish (debug rejimi)
+          # Buildozer android debugni boshlaydi
           buildozer -v android debug
-
-      - name: List files (Troubleshooting)
-        run: |
-          # APK qayerda ekanligini aniqlash uchun hamma joyni tekshiramiz
-          find . -name "*.apk"
-          ls -R bin/ || echo "bin folder not found"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: pubg-injector-app
-          # Pastdagi yo'l hamma APK fayllarini qidirib topadi
           path: bin/*.apk
-          if-no-files-found: error
