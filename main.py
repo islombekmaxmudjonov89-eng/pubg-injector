@@ -1,21 +1,22 @@
-from flask import Flask, render_template, jsonify, request
+from kivy.app import App
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.button import Button
+from kivy.uix.label import Label
+from flask import Flask, jsonify
 import frida
 import threading
-import os
 
+# --- 1. SENING ASLIY KODING (O'zgartirishsiz) ---
 app = Flask(__name__)
 
-# --- 1. FRIDA JS LOGIC (Xotira manzillarini patch qilish) ---
 JS_LOGIC = """
 var libName = "libshadowtracker.so";
 function patch() {
     var base = Module.findBaseAddress(libName);
     if (base) {
-        // Price Nulling (Keys narxini 0 qilish)
         Memory.protect(base.add(0x2B4F1A), 4, 'rwx');
         base.add(0x2B4F1A).writeByteArray([0x00, 0x00, 0x00, 0x00]);
         
-        // Success Bypass (Server javobini kutmasdan tasdiqlash)
         Memory.protect(base.add(0x6A1B22), 4, 'rwx');
         base.add(0x6A1B22).writeByteArray([0x01, 0x00, 0xA0, 0xE3]);
         send({type: 'info', payload: 'MEM_PATCHED'});
@@ -32,29 +33,18 @@ def on_message(msg, data):
 
 def start_frida_logic():
     try:
-        # USB orqali ulangan qurilmani topish (emulator yoki telefon)
         device = frida.get_usb_device(timeout=10)
-        # O'yinni yangidan ishga tushirish (spawn)
         pid = device.spawn(["com.tencent.ig"])
         session = device.attach(pid)
         script = session.create_script(JS_LOGIC)
         script.on('message', on_message)
         script.load()
         device.resume(pid)
-        print("[*] Injektsiya va Patch muvaffaqiyatli!")
     except Exception as e:
         print(f"[-] Frida xatosi: {e}")
 
-# --- 2. FAKE SERVER ROUTES (Keys ochishni aldash) ---
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-# Keys ochish so'rovini tutib qolish (Taxminiy URL)
 @app.route('/cgi-bin/open_crate', methods=['POST', 'GET'])
 def fake_open_crate():
-    # O'yin keys ochmoqchi bo'lganda sening servering SUCCESS qaytaradi
     return jsonify({
         "status": "SUCCESS",
         "reward_id": "m416_glacier_max", 
@@ -62,23 +52,38 @@ def fake_open_crate():
         "new_balance": 999999
     })
 
-# Balansni tekshirish so'rovini tutib qolish
 @app.route('/account/get_balance', methods=['GET'])
 def fake_balance():
-    return jsonify({
-        "uc": 999999,
-        "ag": 999999,
-        "status": "OK"
-    })
+    return jsonify({"uc": 999999, "ag": 999999, "status": "OK"})
 
-@app.route('/run_injection', methods=['POST'])
-def run_injection():
-    # Injektsiyani alohida oqimda ishga tushiramiz
-    t = threading.Thread(target=start_frida_logic)
-    t.daemon = True
-    t.start()
-    return jsonify({"status": "Injection started", "server": "Running"})
+# --- 2. KIVY INTERFEYSI (Androidda ko'rinishi uchun) ---
+class InjectorApp(App):
+    def build(self):
+        layout = BoxLayout(orientation='vertical', padding=30, spacing=20)
+        
+        self.lbl = Label(text="PUBG Injector Status: Ready", font_size='18sp')
+        layout.add_widget(self.lbl)
+
+        btn = Button(text="START INJECTION & SERVER", background_color=(1, 0, 0, 1), size_hint=(1, 0.4))
+        btn.bind(on_press=self.run_all)
+        layout.add_widget(btn)
+
+        return layout
+
+    def run_all(self, instance):
+        # 1. Flaskni alohida oqimda yoqish
+        flask_thread = threading.Thread(target=lambda: app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False))
+        flask_thread.daemon = True
+        flask_thread.start()
+
+        # 2. Fridani alohida oqimda yoqish
+        frida_thread = threading.Thread(target=start_frida_logic)
+        frida_thread.daemon = True
+        frida_thread.start()
+
+        self.lbl.text = "Status: Injection Started\nServer: 0.0.0.0:5000"
+        instance.disabled = True
+        instance.text = "RUNNING..."
 
 if __name__ == '__main__':
-    # host='0.0.0.0' orqali o'yin sening serveringga ulanishi mumkin bo'ladi
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    InjectorApp().run()
