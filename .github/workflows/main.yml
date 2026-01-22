@@ -29,6 +29,16 @@ jobs:
 
       - name: Build with Buildozer
         run: |
-          # Buildozer o'zi hamma narsani yuklab olishi uchun eski keshni tozalaymiz
+          # Eski xatoli keshni tozalash
           rm -rf .buildozer
+          # Buildozer git-ni ko'rishi uchun PATH
+          export PATH=$PATH:/usr/bin/git
           buildozer -v android debug
+        env:
+          PATH: $PATH:/usr/bin:/usr/local/bin
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: pubg-injector-apk
+          path: bin/*.apk
