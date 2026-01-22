@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APK FINAL
 
 on:
   push:
@@ -9,36 +9,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Force Install Git and Tools
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y git build-essential python3-dev
+          # Git borligini tekshirish
+          git --version
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          # Majburiy ravishda git va barcha build vositalarini o'rnatamiz
-          sudo apt-get install -y git build-essential libffi-dev libssl-dev libtool autoconf automake libncurses6 libncursesw6 openjdk-17-jdk unzip zip ccache pkg-config
-
       - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install buildozer cython==0.29.33 gitpython
+          pip install --upgrade pip
+          pip install buildozer cython==0.29.33 flask frida-tools
 
       - name: Build with Buildozer
         run: |
+          # Agar spec fayli bo'lmasa yaratamiz
           if [ ! -f buildozer.spec ]; then
             buildozer init
           fi
-          # Endi git borligi uchun bu qadamdan o'tib ketadi
+          # Gitni buildozer ko'rishi uchun yo'lni ko'rsatamiz
+          export PATH=$PATH:/usr/bin/git
           buildozer -v android debug
-        env:
-          PATH: $PATH:$HOME/.local/bin
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: pubg-injector-app
-          path: bin/*.apk
