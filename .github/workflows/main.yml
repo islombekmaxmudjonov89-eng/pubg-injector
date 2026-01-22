@@ -26,18 +26,46 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          # Bu yerda libncurses5 o'rniga libncurses6 va boshqa kerakli paketlar qo'shildi
-          sudo apt-get install -y libsqlite3-dev sqlite3 bsdmainutils build-essential \
-            libffi-dev libssl-dev python3-dev zip unzip libtool autoconf automake \
-            libncurses6 libncursesw6 zlib1g-dev openjdk-17-jdk ant ccache
+          # Libtool va autoconf xatolarini tuzatish uchun hamma paketlarni qo'shdik
+          sudo apt-get install -y \
+            build-essential \
+            git \
+            ffmpeg \
+            libsdl2-dev \
+            libsdl2-image-dev \
+            libsdl2-mixer-dev \
+            libsdl2-ttf-dev \
+            libportmidi-dev \
+            libswscale-dev \
+            libavformat-dev \
+            libavcodec-dev \
+            zlib1g-dev \
+            libgstreamer1.0-dev \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good \
+            libffi-dev \
+            libssl-dev \
+            libtool \
+            autoconf \
+            automake \
+            libncurses6 \
+            libncursesw6 \
+            openjdk-17-jdk \
+            unzip \
+            zip \
+            ccache \
+            pkg-config
 
       - name: Build with Buildozer
         run: |
           if [ ! -f buildozer.spec ]; then
             buildozer init
           fi
-          # Buildozer android debugni boshlaydi
-          buildozer -v android debug
+          # Buildozer keshini tozalab yangidan boshlash uchun
+          buildozer android debug
+        env:
+          # Ba'zi kutubxonalar uchun muhitni sozlaymiz
+          PATH: $PATH:$HOME/.local/bin
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
