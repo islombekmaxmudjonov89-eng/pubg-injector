@@ -1,42 +1,54 @@
 name: Build APK
-on: [push, pull_request]
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get Date
-        id: get-date
-        run: echo "date=$(date -u +'%Y%m%d')" >> $GITHUB_OUTPUT
-
-      - name: Cache Buildozer
-        uses: actions/cache@v4
-        with:
-          path: .buildozer
-          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}-${{ steps.get-date.outputs.date }}
-
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
       - name: Install dependencies
         run: |
-          sudo apt update
-          sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 cmake libffi-dev libssl-dev
-          pip install --upgrade pip
-          pip install buildozer cython==0.29.33 virtualenv
+          python -m pip install --upgrade pip
+          pip install buildozer cython==0.29.33 gitpython
 
-      - name: Build APK
+      - name: Install system dependencies
         run: |
-          # SDK litsenziyasini avtomat qabul qilish
-          mkdir -p ~/.android && touch ~/.android/repositories.cfg
-          yes | buildozer android debug || true
-        
+          sudo apt-get update
+          sudo apt-get install -y libsqlite3-dev sqlite3 bsdmainutils build-essential \
+            libffi-dev libssl-dev python3-dev zip unzip libtool autoconf automake \
+            libncurses5 libncursesw5 zlib1g-dev openjdk-17-jdk ant ccache
+
+      - name: Build with Buildozer
+        run: |
+          # Buildozer init (agar mavjud bo'lmasa)
+          if [ ! -f buildozer.spec ]; then
+            buildozer init
+          fi
+          # Buildozer orqali APK yaratish (debug rejimi)
+          buildozer -v android debug
+
+      - name: List files (Troubleshooting)
+        run: |
+          # APK qayerda ekanligini aniqlash uchun hamma joyni tekshiramiz
+          find . -name "*.apk"
+          ls -R bin/ || echo "bin folder not found"
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: pubg-test-apk
-          path: ./*.apk
+          name: pubg-injector-app
+          # Pastdagi yo'l hamma APK fayllarini qidirib topadi
+          path: bin/*.apk
+          if-no-files-found: error
